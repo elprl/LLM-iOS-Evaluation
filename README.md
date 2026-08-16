@@ -21,6 +21,8 @@ The starting point is a vanilla Xcode project that is the default starting proje
 
 - Xcode 26.6
 - Branch 'vanilla' is the starting point.
+- I run the prompt against the model/agent and commit the output to the branch only.
+- I edit the README.md with environment specific details and setup.
 
 ## The Output Branches
 
