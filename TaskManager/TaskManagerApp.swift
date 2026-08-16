@@ -1,32 +1,28 @@
-//
-//  TaskManagerApp.swift
-//  TaskManager
-//
-//  Created by Paul Leo on 16/08/2026.
-//
-
 import SwiftUI
 import SwiftData
 
 @main
+@MainActor
 struct TaskManagerApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    private let modelContainer: ModelContainer
+    private let viewModel: TaskListViewModel
 
+    init() {
+        let schema = Schema([TaskItem.self])
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            self.modelContainer = container
+            self.viewModel = TaskListViewModel(container: container)
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            fatalError("Failed to create ModelContainer: \(error)")
         }
-    }()
+    }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(viewModel: viewModel)
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(modelContainer)
     }
 }
