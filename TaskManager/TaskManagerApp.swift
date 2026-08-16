@@ -10,23 +10,25 @@ import SwiftData
 
 @main
 struct TaskManagerApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    /// `ModelContainer` is `Sendable`, so the same instance can safely back both the SwiftUI
+    /// environment and the background ``TaskDataActor``.
+    private let modelContainer: ModelContainer
 
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    /// Owned here with `@State` so the view model survives view identity changes.
+    @State private var taskListViewModel: TaskListViewModel
+
+    init() {
+        let container = ModelContainerFactory.makeAppContainer()
+        modelContainer = container
+        _taskListViewModel = State(
+            initialValue: TaskListViewModel(store: TaskDataActor(modelContainer: container))
+        )
+    }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TaskListView(viewModel: taskListViewModel)
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(modelContainer)
     }
 }
