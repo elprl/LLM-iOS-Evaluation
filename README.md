@@ -17,3 +17,9 @@ This branch is for the `claude/opus5-high` model's response to the prompt.
 - Swift 6
 - Vanilla Xcode project branched from 'vanilla' - the starting point.
 - Claude Code Agent v1.3 running the prompt against the `Opus 5 High` model. Auto mode only, no plan mode used.
+- Skills enabled:
+  - Swift Concurrency Expert
+  - SwiftUI-pro
+  - Swiftui-view-refactor
+  - xcodebuildingmcp-cli
+  - ios-unit-test-skill
