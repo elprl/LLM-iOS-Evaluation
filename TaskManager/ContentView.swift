@@ -1,61 +1,120 @@
-//
-//  ContentView.swift
-//  TaskManager
-//
-//  Created by Paul Leo on 16/08/2026.
-//
-
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @State private var viewModel: TaskListViewModel
+    @State private var newTaskTitle = ""
+
+    init(modelContainer: ModelContainer) {
+        _viewModel = State(
+            initialValue: TaskListViewModel(modelContainer: modelContainer)
+        )
+    }
 
     var body: some View {
-        NavigationSplitView {
+        @Bindable var viewModel = viewModel
+
+        NavigationStack {
             List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                Section("New Task") {
+                    HStack {
+                        TextField("What needs doing?", text: $newTaskTitle)
+                            .submitLabel(.done)
+                            .onSubmit(addTask)
+
+                        Button("Add Task", systemImage: "plus", action: addTask)
+                            .labelStyle(.iconOnly)
+                            .disabled(cannotAddTask)
                     }
                 }
-                .onDelete(perform: deleteItems)
+
+                Section("Tasks") {
+                    if viewModel.isLoading, viewModel.tasks.isEmpty {
+                        ProgressView("Loading tasks")
+                            .frame(maxWidth: .infinity)
+                    } else if viewModel.tasks.isEmpty {
+                        ContentUnavailableView(
+                            "No Tasks",
+                            systemImage: "checklist",
+                            description: Text("Add a task to get started.")
+                        )
+                    } else {
+                        ForEach(viewModel.tasks) { task in
+                            TaskRowView(task: task) {
+                                toggleTask(id: task.id)
+                            }
+                        }
+                        .onDelete(perform: deleteTasks)
+                    }
+                }
             }
+            .navigationTitle("Tasks")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                if !viewModel.tasks.isEmpty {
                     EditButton()
                 }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+            }
+            .disabled(viewModel.isPerformingMutation)
+            .overlay {
+                if viewModel.isPerformingMutation {
+                    ProgressView()
+                        .controlSize(.large)
                 }
             }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            .task {
+                await viewModel.loadTasks()
+            }
+            .alert("Unable to Update Tasks", isPresented: $viewModel.isShowingError) {
+                Button("OK", action: viewModel.dismissError)
+            } message: {
+                Text(viewModel.errorMessage)
             }
         }
     }
+
+    private var cannotAddTask: Bool {
+        newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || viewModel.isPerformingMutation
+    }
+
+    private func addTask() {
+        let title = newTaskTitle
+
+        Task {
+            if await viewModel.addTask(title: title) {
+                newTaskTitle = ""
+            }
+        }
+    }
+
+    private func toggleTask(id: UUID) {
+        Task {
+            await viewModel.toggleTask(id: id)
+        }
+    }
+
+    private func deleteTasks(at offsets: IndexSet) {
+        let ids = offsets.map { viewModel.tasks[$0].id }
+
+        Task {
+            await viewModel.deleteTasks(ids: ids)
+        }
+    }
+
+    fileprivate static let previewModelContainer: ModelContainer = {
+        do {
+            let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+            return try ModelContainer(
+                for: TaskEntity.self,
+                configurations: configuration
+            )
+        } catch {
+            fatalError("Unable to create preview model container: \(error)")
+        }
+    }()
 }
 
 #Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+    ContentView(modelContainer: ContentView.previewModelContainer)
+        .modelContainer(ContentView.previewModelContainer)
 }
