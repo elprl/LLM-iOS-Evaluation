@@ -1,4 +1,4 @@
-# LLMTestHarness-TaskManager
+# Evaluation of LLM and Agent Capabilities for iOS App Development
 
 ## Purpose
 
