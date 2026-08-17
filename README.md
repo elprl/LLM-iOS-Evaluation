@@ -4,7 +4,6 @@
 
 This is a LLM evaluation project for testing AI models and agents against a specific prompt that wants to build a reasonably complex SwiftUI app. The goal is to see how well the model/agent can follow the prompt and build the app to the best of its ability for the purpose of comparing the different outputs.
 
-
 ## The Prompt
 
 *Given this vanilla xcode project, edit the project to give me the Swift 6 strict concurrency logic for a SwiftUI app that uses a SwiftData query in the background using a MVVM architecture with modern macros like @Observable, @Model, @ModelActor. The app simply lists tasks. Use await/async style of concurrency and avoid 'sendability hell' issues.*
@@ -26,40 +25,42 @@ The starting point is a vanilla Xcode project that is the default starting proje
 
 ## The Output Branches
 
-- Branch 'codex/chatgpt-5.6-high' is the outputbranch for the `ChatGPT 5.6 High` model running on Codex Desktop Agent Version 26.810.52044.
-- Branch 'claude/opus5-high' is the output branch for the `Claude Opus 5 High` model running on Claude Code Agent v1.3.
-- Branch 'qwen/qwen3.8-27b' is the output branch for the `Qwen 3.8 27B` model running on LM Studio Bionic v1.0.7 and OpenCode v1.18.18.
-- Branch 'cursor/grok4.6-high' is the output branch for the `Grok 4.6 High` model running on Cursor v3.16.17.
+In order not to contaminate the results of subsequent model/agent's outputs, I do not add folders of the outputs. Instead, I commit the output to a new branch for each model/agent.
+
+- Branch `codex/chatgpt5.6-sol-high` is the outputbranch for the `ChatGPT 5.6 High` model running on Codex Desktop Agent Version 26.810.52044.
+- Branch `claude/opus5-high` is the output branch for the `Claude Opus 5 High` model running on Claude Code Agent v1.3.
+- Branch `qwen/qwen3.8-27b` is the output branch for the `Qwen 3.8 27B` model running on LM Studio Bionic v1.0.7 and OpenCode v1.18.18.
+- Branch `cursor/grok4.6-high` is the output branch for the `Grok 4.6 High` model running on Cursor v3.16.17.
 
 ## Comparison of the Output Branches
 
-Three reviews went into this: two supplied evaluations, plus a static pass over the committed Swift. They agree on the thing that actually matters for this harness.
-
 Codex is the only branch that creates its `@ModelActor` from an `@concurrent` function. That is the executor-affinity trap sitting inside "run a SwiftData query in the background," and everyone else missed it. Claude has the nicest architecture and by far the best tests, but it never proves the work leaves the main thread, and it built a much bigger app than the prompt asked for. Grok is the tidy compact one after Codex, with the best incremental updates and row accessibility, still no real tests, same actor-construction bug. Qwen got the MVVM and Sendable-boundary idea, then dropped the ball on tests, efficiency, accessibility, and layering.
+
+They all managed to figure out the DTO pattern for solving the actor boundary problem, which a year ago even the frontier models were not able to do. Now even a local model has the reasoning ability to do it. This is a huge step forward in the capabilities of local LLMs. `google/gemma-4-31b-qat` was able to work this out, yet `google/gemma-4-26b-a4b-qat` was not. Interesting that none of the models used the `PersistentIdentifier` pattern which reconstitutes the SwiftData object in the main actor context, mentioned in my repo: [https://github.com/elprl/SwiftDataSwift6Concurrency](https://github.com/elprl/SwiftDataSwift6Concurrency) . 
 
 Ranking I would use:
 
-| Rank | Branch | Score | Why |
-|---:|---|---:|---|
-| 1 | `codex/chatgpt5.6-sol-high` | 8.5/10 | Hits the prompt and gets the concurrency right |
-| 2 | `claude/opus5-high` | 8.0/10 | Best structure and tests; misses the executor detail |
-| 3 | `cursor/grok4.6-high` | 6.8/10 | Lean and efficient; untested, not actually background |
-| 4 | `qwen/qwen3.8-27b` | 5.5/10 | Right skeleton, most of the production gaps |
+| Rank | Branch                      | Score  | Why                                                   |
+| ---- | --------------------------- | ------ | ----------------------------------------------------- |
+| 1    | `codex/chatgpt5.6-sol-high` | 8.5/10 | Hits the prompt and gets the concurrency right        |
+| 2    | `claude/opus5-high`         | 8.0/10 | Best structure and tests; misses the executor detail  |
+| 3    | `cursor/grok4.6-high`       | 6.8/10 | Lean and efficient; untested, not actually background |
+| 4    | `qwen/qwen3.8-27b`          | 5.5/10 | Right skeleton, most of the production gaps           |
+
 
 ### How this was scored
 
-The README says the point is whether each model noticed the threading complexity hiding in the prompt. I weighted it that way:
+The point is whether each model noticed the threading complexity hiding in the prompt. I weighted it that way:
 
-| Criterion | Weight |
-|---|---:|
-| Prompt fidelity and correctness | 30% |
-| Architecture and isolation design | 20% |
-| Testability and committed tests | 15% |
-| Maintainability and readability | 15% |
-| Persistence and state-update efficiency | 10% |
-| UX and accessibility | 10% |
+| Criterion                               | Weight |
+| --------------------------------------- | ------ |
+| Prompt fidelity and correctness         | 30%    |
+| Architecture and isolation design       | 20%    |
+| Testability and committed tests         | 15%    |
+| Maintainability and readability         | 15%    |
+| Persistence and state-update efficiency | 10%    |
+| UX and accessibility                    | 10%    |
 
-This pass is static. No new builds, tests, runtime probes, or branch edits. One of the supplied reviews had already probed `@ModelActor` executor affinity on Xcode 26.6; I treated that as corroboration, not as something I re-ran. Chat-export files stayed out of the scores. They are provenance, not the app.
 
 ### The concurrency issue that decides this
 
@@ -90,16 +91,18 @@ That is why Codex wins this harness even though Claude's architecture is more gr
 
 ### Scorecard
 
+
 | Branch | Correctness | Architecture | Tests | Maintainability | Efficiency | UX/accessibility |
-|---|---:|---:|---:|---:|---:|---:|
-| Codex | 9.5 | 8.5 | 7.5 | 9.0 | 7.0 | 8.0 |
-| Claude | 6.5 | 9.5 | 9.5 | 8.0 | 6.5 | 9.0 |
-| Grok | 6.5 | 7.5 | 2.0 | 8.5 | 9.0 | 8.5 |
-| Qwen | 6.0 | 6.5 | 2.0 | 6.5 | 5.5 | 6.0 |
+| ------ | ----------- | ------------ | ----- | --------------- | ---------- | ---------------- |
+| Codex  | 9.5         | 8.5          | 7.5   | 9.0             | 7.0        | 8.0              |
+| Claude | 6.5         | 9.5          | 9.5   | 8.0             | 6.5        | 9.0              |
+| Grok   | 6.5         | 7.5          | 2.0   | 8.5             | 9.0        | 8.5              |
+| Qwen   | 6.0         | 6.5          | 2.0   | 6.5             | 5.5        | 6.0              |
+
 
 These are judgments for this prompt, not a ranking of the models in general.
 
-### Codex: the actual answer
+### Codex Sol 5.6 High: the actual answer
 
 Codex has the mix I wanted: correct, small, readable.
 
@@ -109,7 +112,7 @@ What I would still change: the view model takes a `ModelContainer` and builds a 
 
 The full-store delete scan is a coding choice, not a law of UUID identity. A predicate, an index, or a targeted delete API would keep domain IDs without walking every row.
 
-### Claude: the app I would actually keep
+### Claude Opus 5 High: the app I would actually keep
 
 Claude is the most complete design in the set, and it shows.
 
@@ -119,54 +122,37 @@ Then the miss: `TaskDataActor` is constructed in the main-actor app initializer,
 
 Give Claude a concurrent actor factory and clean up the double-load, and it would be the best starting point for a real product. For this harness, the executor miss and the extra scope keep it behind Codex.
 
-### Grok: small, fast, untested
+### Cursor / Grok 4.6 High: small, fast, untested
 
 After Codex, this is the best code-per-feature ratio.
 
 Files are small and split in the right places, including a dedicated `TaskRow`. `TaskItem` stays on the actor; `TaskDTO: Sendable` crosses to the view model. Add and toggle return the affected DTO. Delete batches and saves once. After a successful mutation the view model patches the local array instead of refetching. The row has the best accessibility: label, value, hint, and a decorative icon that is hidden. Swift 6, complete checking, approachable concurrency, and main-actor defaults are all explicit.
 
-`TaskModelActor` is still created inside the `@MainActor` view-model init, so the "background executor" claim is not established. Tests are the vanilla placeholder. `tasks`, `isLoading`, and `errorMessage` have open setters. The view model is glued to a concrete actor, so no fake store. No cancellation or overlapping-load coordination. Inserting at index zero copies the store's newest-first order; change sort rules and the UI and store drift. The add field clears before persistence succeeds.
+`TaskModelActor` is still created inside the `@MainActor` view-model init, so the "background executor" claim is not established. Tests are the vanilla placeholder. `tasks`, `isLoading`, and `errorMessage` have open setters. The view model is glued to a concrete actor, so no fake store. No cancellation or overlapping-load coordination. Inserting at index zero copies the store's newest-first order; change sort rules and the UI and store drift. The add field clears before persistence succeeds. The actor call is awaited, then the local array changes. Incremental post-success updates. Still cheap. Not optimistic UI.
 
-The supplied reviews call these updates "optimistic." They are not. The actor call is awaited, then the local array changes. Incremental post-success updates. Still cheap. Not optimistic UI.
+### Local Model / Qwen 3.8 27B: free, the shape is right, but the details are not
 
-### Qwen: the shape is right, the details are not
-
-Qwen is easy to follow and it did get the idea.
+Qwen is easy to follow and it did get the idea. The big deal here is that it is a local model, it is free, it built a working app via OpenCode Agent, but it took almost 2 hours to run on my M1 Max Macbook Pro which is unproductive. This is by far the best local coding model I have seen so far as of August 2026. 
 
 `@Model`, `@ModelActor`, a Sendable DTO, an explicit `@MainActor @Observable` view model, async/await all the way down. Live models do not reach the view. Loading, empty, refresh, add, toggle, swipe-delete are all there. `private(set)` protects the task and loading collections. Compact enough to teach from.
 
 Same actor-construction problem as Grok and Claude. Tests still vanilla. Multi-delete does one actor hop and one `save()` per item, then reloads everything, so a later failure can leave a partial write. Every mutation reloads. Concrete actor, no fake store. `IndexSet` leaks into the view-model API. `ContentView` builds rows inline instead of extracting a view. A hand-rolled `Binding(get:set:)` pokes view-model error state. Image-only add and completion controls have no real accessibility labels. Preview helper uses `try!`. Lookups go through `modelContext.model(for:)`, which is non-optional, then silently return if the cast fails. Claude and Grok's typed optional `@ModelActor` subscript is clearer.
 
-Qwen also removed the template's main-actor-by-default setting. The supplied reviews treat that as automatically weaker data-race safety. That is too strong. Swift 6 strict checking plus explicit `@MainActor` on the UI can still be a valid design. The fairer complaint is that it leaves the Xcode default and makes every future UI-bound type more work to annotate and review.
-
-### Where the supplied opinions agree, and where they do not
-
-Everyone landed on Codex as the winner for the README's purpose. Executor affinity is the discriminator. All four use Sendable snapshots instead of moving live models. Claude has the best abstraction, query design, and tests, and it overbuilt. Grok is lean, readable, efficient locally, and accessible. Grok and Qwen are hurt badly by leaving the test target alone. Qwen is last.
-
-One review put Grok above Claude on scope and code-to-value. Another tied Claude with Codex on maintainable architecture. Both are fair if you change the rubric.
-
-I kept Claude second. The request was overall software quality (architecture, correctness, professional quality, testability, readability, flexibility), not just how small the diff is. The protocol and the tests beat Grok's compactness. It does not tie Codex, because missing background-executor construction is a miss on the central requirement.
-
-Corrections I made while merging:
-
-- Grok's updates are incremental post-success updates, not optimistic updates.
-- Codex's UUID identity does not force a full scan. The delete implementation chose a full-store fetch.
-- Qwen dropping main-actor-by-default is a real tradeoff, not by itself a data-race failure under Swift 6.
-- Codex and Grok set `SWIFT_STRICT_CONCURRENCY = complete`, which documents intent. Swift 6 language mode already enforces strict concurrency, so Claude and Qwen are not compiling without it.
-- Qwen's `model(for:)` is a weaker missing-record API than the typed optional subscript. I would not overclaim the exact runtime fault behaviour from source alone.
+Qwen also removed the template's main-actor-by-default setting. Potentially weaker data-race safety. Swift 6 strict checking plus explicit `@MainActor` on the UI can still be a valid design. The fairer complaint is that it leaves the Xcode default and makes every future UI-bound type more work to annotate and review.
 
 ### Category winners
 
-| Category | Winner | Why |
-|---|---|---|
-| Prompt fulfillment | Codex | Only explicit off-main actor construction; stayed small |
-| Concurrency design | Codex | `@concurrent` factory, Sendable snapshots, cancellation guard |
-| Architecture and flexibility | Claude | Protocol seam and typed request/draft/snapshot types |
-| Testability and test breadth | Claude | Eight focused tests and an injectable store |
-| Code-to-value ratio | Grok | Small, readable, efficient mutations |
-| Persistence efficiency | Grok | Single-item returns, batched delete, local post-success updates |
-| UX breadth | Claude | Search, filter, sort, richer add flow, more states |
-| Row accessibility | Grok | Label, value, hint, decorative image handled |
+| Category                     | Winner | Why                                                             |
+| ---------------------------- | ------ | --------------------------------------------------------------- |
+| Prompt fulfillment           | Codex  | Only explicit off-main actor construction; stayed small         |
+| Concurrency design           | Codex  | `@concurrent` factory, Sendable snapshots, cancellation guard   |
+| Architecture and flexibility | Claude | Protocol seam and typed request/draft/snapshot types            |
+| Testability and test breadth | Claude | Eight focused tests and an injectable store                     |
+| Code-to-value ratio          | Grok   | Small, readable, efficient mutations                            |
+| Persistence efficiency       | Grok   | Single-item returns, batched delete, local post-success updates |
+| UX breadth                   | Claude | Search, filter, sort, richer add flow, more states              |
+| Row accessibility            | Grok   | Label, value, hint, decorative image handled                    |
+
 
 ### If I had to ship one
 
@@ -174,7 +160,11 @@ Unchanged: Codex.
 
 If I were assembling a production version I would steal Codex's `@concurrent` factory, strict settings, mutation gating, and small scope; Claude's `TaskStore` seam, Sendable query object, state model, and tests; and Grok's targeted mutation returns, batched delete, and row accessibility. That would actually run the query in the background and still be something you could extend.
 
-### Repo nits
+## How you can use this repo to evaluate your own models
 
-`README.md` calls the Codex branch `codex/chatgpt-5.6-high`. The git branch is `codex/chatgpt5.6-sol-high`. It also says "outputbranch."
-
+1. Clone this repo.
+2. Checkout the `vanilla` branch.
+3. Create a new branch for your model.
+4. Run the PROMPT.md file to generate the output.
+5. Commit the output to the new branch.
+6. Create a pull request 
