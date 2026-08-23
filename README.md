@@ -16,6 +16,10 @@ This prompt is a good test of the model/agent's ability to follow a specific pro
 
 The starting point is a vanilla Xcode project that is the default starting project for a SwiftUI app when one creates a new project in Xcode v26.6. It is a good starting point because it is a simple app that is easy to understand and modify. It is also a good starting point because it is a good example of a SwiftUI app that uses SwiftData.
 
+## The Follow-up Prompt
+
+Describe your solution and architecture in an ARCHITECTURE.md in the root of the project. Copy as much of the relevant code snipets as you need. Do not change any code. Describe your rational for all architectural decisions.
+
 ## The Environment
 
 - Xcode 26.6
@@ -25,7 +29,7 @@ The starting point is a vanilla Xcode project that is the default starting proje
 
 ## The Output Branches
 
-In order not to contaminate the results of subsequent model/agent's outputs, I do not add folders of the outputs. Instead, I commit the output to a new branch for each model/agent.
+In order not to contaminate the results of subsequent model/agent's outputs (and to prevent cheating), I am not consolidating outputs and adding folders into `master`. Instead, I isolate the outputs to their own branch for each model/agent.
 
 - Branch `codex/chatgpt5.6-sol-high` is the outputbranch for the `ChatGPT 5.6 High` model running on Codex Desktop Agent Version 26.810.52044.
 - Branch `claude/opus5-high` is the output branch for the `Claude Opus 5 High` model running on Claude Code Agent v1.3.

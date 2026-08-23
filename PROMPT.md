@@ -1,1 +1,7 @@
+# Prompt 1
+
 Given this vanilla xcode project, edit the project to give me the Swift 6 strict concurrency logic for a SwiftUI app that uses a SwiftData query in the background using a MVVM architecture with modern macros like @Observable, @Model, @ModelActor. The app simply lists tasks. Use await/async style of concurrency and avoid 'sendability hell' issues.
+
+# Prompt 2
+
+Describe your solution and architecture in an ARCHITECTURE.md in the root of the project. Copy as much of the relevant code snipets as you need. Do not change any code. Describe your rational for all architectural decisions.
