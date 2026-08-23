@@ -36,3 +36,7 @@ In order not to contaminate the results of subsequent model/agent's outputs, I d
 - Branch `qwen/qwen3.8-27b` is the output branch for the `Qwen 3.8 27B` model running on LM Studio Bionic v1.0.7 and OpenCode v1.18.18.
 - Branch `cursor/grok4.6-high` is the output branch for the `Grok 4.6 High` model running on Cursor v3.16.17.
 - Branch `google/gemini-3.7-flash-high` is the output branch for the `Gemini 3.7 Flash High` model running on Antigravity v2.9.1.
+
+## This branch's Solution Architecture
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the details of this branch's solution architecture.
