@@ -10,22 +10,28 @@ import SwiftData
 
 @main
 struct TaskManagerApp: App {
-    var sharedModelContainer: ModelContainer = {
+    let sharedModelContainer: ModelContainer
+    @State private var viewModel: TaskListViewModel
+
+    init() {
         let schema = Schema([
-            Item.self,
+            TaskItem.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            self.sharedModelContainer = container
+            let actor = TaskModelActor(modelContainer: container)
+            _viewModel = State(initialValue: TaskListViewModel(modelActor: actor))
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
+    }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(viewModel: viewModel)
         }
         .modelContainer(sharedModelContainer)
     }
